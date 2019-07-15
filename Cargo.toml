@@ -1,6 +1,6 @@
 [package]
 name = "md2pdf"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Thomas Forgione <thomas@forgione.fr>"]
 description = "A small utility to convert markdown files to pdf exploiting tectonic."
 edition = "2018"
