@@ -369,7 +369,7 @@ dependencies = [
 
 [[package]]
 name = "md2pdf"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pulldown-cmark 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",

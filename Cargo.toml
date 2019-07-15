@@ -1,9 +1,12 @@
 [package]
 name = "md2pdf"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Thomas Forgione <thomas@forgione.fr>"]
 description = "A small utility to convert markdown files to pdf exploiting tectonic."
 edition = "2018"
+license = "MIT"
+repository = "https://gitea.tforgione.fr/tforgione/md2pdf"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
