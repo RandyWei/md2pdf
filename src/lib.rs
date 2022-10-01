@@ -82,7 +82,7 @@ pub fn markdown_to_latex(markdown: String) -> String {
             Event::Start(Tag::Image(_, path, title)) => {
                 output.push_str("\\begin{figure}\n");
                 output.push_str("\\centering\n");
-                output.push_str("\\includegraphics[width=\\textwidth]{");;
+                output.push_str("\\includegraphics[width=\\textwidth]{");
                 output.push_str(&*path);
                 output.push_str("}\n");
                 output.push_str("\\caption{");
