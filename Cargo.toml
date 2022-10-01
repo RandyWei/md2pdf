@@ -15,3 +15,11 @@ cargo = "1.64"
 tectonic = "0.5.2"
 pulldown-cmark = "0.5.3"
 clap = { version = "4.0.7", features = ["cargo"] }
+
+[lib]
+name = "md2pdf"
+path = "src/lib.rs"
+
+[[bin]]
+name = "md2pdf"
+path = "src/main.rs"
