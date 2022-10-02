@@ -58,8 +58,27 @@ fn main() {
             unwrap!(output.write(tex.as_bytes()), "couldn't write output file");
         },
         Some("pdf") => {
-            let data = unwrap!(markdown_to_pdf(content), "error while compiling latex, this is most likely a bug");
-            unwrap!(output.write(&data), "couldn't write output file");
+            match markdown_to_pdf(content) {
+                Ok(data) => {
+                    match output.write(&data) {
+                        Ok(_) => {
+                            exit(0);
+                        },
+                        Err(error) => {
+                            eprintln!(
+                                "error while writing file: {}", error
+                            );
+                            exit(1);
+                        },
+                    }
+                },
+                Err(error) => {
+                    eprintln!(
+                        "error while compiling latex: {}", error.description()
+                    );
+                    exit(1);
+                }
+            }
         },
         Some(ext) => {
             eprintln!("unknown file format ({}) for output: {}", ext, output_path.display());
