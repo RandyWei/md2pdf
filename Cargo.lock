@@ -902,7 +902,7 @@ dependencies = [
 
 [[package]]
 name = "md2pdf"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "clap 4.0.7",
  "pulldown-cmark",

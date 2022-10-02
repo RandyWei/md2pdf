@@ -1,18 +1,17 @@
 [package]
 name = "md2pdf"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Thomas Forgione <thomas@forgione.fr>"]
 description = "A small utility to convert markdown files to pdf exploiting tectonic."
 edition = "2021"
 license = "MIT"
 repository = "https://gitea.tforgione.fr/tforgione/md2pdf"
 readme = "README.md"
-cargo = "1.64"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tectonic = "0.5.2"
+tectonic = "0.9"
 pulldown-cmark = "0.5.3"
 clap = { version = "4.0.7", features = ["cargo"] }
 
