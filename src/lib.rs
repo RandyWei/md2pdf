@@ -1,6 +1,6 @@
 use pulldown_cmark::{Event, Parser, Tag};
 
-pub const LATEX_HEADER:&str = r#"\documentclass{scrartcl}
+pub const LATEX_HEADER: &str = r#"\documentclass{scrartcl}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{listings}
@@ -50,11 +50,11 @@ pub fn markdown_to_latex(markdown: String) -> String {
         match event {
             Event::Start(Tag::Header(level)) => {
                 output.push_str("\\");
-                for _ in 1 .. level {
+                for _ in 1..level {
                     output.push_str("sub");
                 }
                 output.push_str("section{");
-            },
+            }
             Event::End(Tag::Header(_)) => output.push_str("}\n"),
 
             Event::Start(Tag::Emphasis) => output.push_str("\\emph{"),
@@ -73,11 +73,11 @@ pub fn markdown_to_latex(markdown: String) -> String {
                 output.push_str("\\href{");
                 output.push_str(&*url);
                 output.push_str("}{");
-            },
+            }
 
             Event::End(Tag::Link(_, _, _)) => {
                 output.push_str("}");
-            },
+            }
 
             Event::Start(Tag::Image(_, path, title)) => {
                 output.push_str("\\begin{figure}\n");
@@ -88,32 +88,32 @@ pub fn markdown_to_latex(markdown: String) -> String {
                 output.push_str("\\caption{");
                 output.push_str(&*title);
                 output.push_str("}\n\\end{figure}\n");
-            },
+            }
 
             Event::Start(Tag::Item) => output.push_str("\\item "),
             Event::End(Tag::Item) => output.push_str("\n"),
 
             Event::Start(Tag::CodeBlock(lang)) => {
-                if ! lang.is_empty() {
+                if !lang.is_empty() {
                     output.push_str("\\begin{lstlisting}[language=");
                     output.push_str(&*lang);
                     output.push_str("]\n");
                 } else {
                     output.push_str("\\begin{lstlisting}\n");
                 }
-            },
+            }
 
             Event::End(Tag::CodeBlock(_)) => {
                 output.push_str("\n\\end{lstlisting}\n");
-            },
+            }
 
             Event::Text(t) => {
                 output.push_str(&*t);
-            },
+            }
 
             Event::SoftBreak => {
                 output.push('\n');
-            },
+            }
 
             _ => (),
         }
@@ -131,9 +131,9 @@ pub fn markdown_to_pdf(markdown: String) -> Result<Vec<u8>, tectonic::Error> {
 #[cfg(test)]
 mod tests {
     use super::{markdown_to_latex, markdown_to_pdf};
+    use lopdf::Document;
     use pretty_assertions::assert_eq;
     use std::io::Cursor;
-    use lopdf::Document;
 
     const MARKDOWN_IN: &str = r#"# First title
 Some content
@@ -202,14 +202,14 @@ Text
         match output {
             Ok(data) => {
                 let mut file = Cursor::new(data);
-                match Document::load_from(&mut file){
+                match Document::load_from(&mut file) {
                     Ok(doc) => {
                         assert_eq!("1.5", doc.version);
-                    },
-                    Err(_) => assert!(true)
+                    }
+                    Err(_) => assert!(true),
                 }
-            },
-            Err(_) => assert!(true)
+            }
+            Err(_) => assert!(true),
         }
     }
 }
