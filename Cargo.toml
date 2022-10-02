@@ -22,3 +22,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "md2pdf"
 path = "src/main.rs"
+
+[dev-dependencies]
+pretty_assertions = "1.3.0"
+lopdf = "0.27.0"

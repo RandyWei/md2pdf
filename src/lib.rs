@@ -128,3 +128,88 @@ pub fn markdown_to_pdf(markdown: String) -> Result<Vec<u8>, tectonic::Error> {
     tectonic::latex_to_pdf(markdown_to_latex(markdown))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{markdown_to_latex, markdown_to_pdf};
+    use pretty_assertions::assert_eq;
+    use std::io::Cursor;
+    use lopdf::Document;
+
+    const MARKDOWN_IN: &str = r#"# First title
+Some content
+## Second level
+Text
+[link](https://example.com)
+**Bold**
+__Italic__
+"#;
+    const LATEXT_OUT: &str = r#"\documentclass{scrartcl}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{colKeys}{rgb}{0,0.5,0}
+\definecolor{colIdentifier}{rgb}{0,0,0}
+\definecolor{colComments}{rgb}{0,0.5,1}
+\definecolor{colString}{rgb}{0.6,0.1,0.1}
+\definecolor{colBackground}{rgb}{0.95,0.95,1}
+\lstset{%configuration de listings
+   float=hbp,%
+   basicstyle=\ttfamily\small,%
+   %
+   identifierstyle=\color{colIdentifier}, %
+   keywordstyle=\color{colKeys}, %
+   stringstyle=\color{colString}, %
+   commentstyle=\color{colComments}\textit, %
+   %
+   backgroundcolor=\color{colBackground},%
+   %
+   columns=flexible, %
+   tabsize=2, %
+   frame=trbl, %
+   %frameround=tttt,%
+   extendedchars=true, %
+   showspaces=false, %
+   showstringspaces=false, %
+   numbers=left, %
+   numberstyle=\tiny, %
+   breaklines=true, %
+   breakautoindent=true, %
+   captionpos=b,%
+   xrightmargin=0.2cm, %
+   xleftmargin=0.2cm
+}
+\begin{document}
+\section{First title}
+Some content\subsection{Second level}
+Text
+\href{https://example.com}{link}
+\textbf{Bold}
+\textbf{Italic}
+\end{document}
+"#;
+
+    #[test]
+    fn test_md_to_latex() {
+        let output = markdown_to_latex(MARKDOWN_IN.to_string());
+        assert_eq!(LATEXT_OUT, output);
+    }
+
+    #[test]
+    fn test_latex_to_pdf() {
+        let output = markdown_to_pdf(MARKDOWN_IN.to_string());
+
+        match output {
+            Ok(data) => {
+                let mut file = Cursor::new(data);
+                match Document::load_from(&mut file){
+                    Ok(doc) => {
+                        assert_eq!("1.5", doc.version);
+                    },
+                    Err(_) => assert!(true)
+                }
+            },
+            Err(_) => assert!(true)
+        }
+    }
+}
