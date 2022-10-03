@@ -5,7 +5,7 @@
 
 ### Usage
 
-```
+```sh
 md2pdf -i input.md -o output.pdf
 ```
 
