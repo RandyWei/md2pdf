@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use pulldown_cmark::{Event, Parser, Tag};
 
 pub const LATEX_HEADER: &str = r#"\documentclass{scrartcl}
@@ -41,26 +42,83 @@ pub const LATEX_HEADER: &str = r#"\documentclass{scrartcl}
 
 pub const LATEX_FOOTER: &str = "\n\\end{document}\n";
 
+/// Used to keep track of current pulldown_cmark "event".
+/// TODO: Is there a native pulldown_cmark method to do this?
+#[derive(Debug)]
+enum EventType {
+    //Code,
+    Emphasis,
+    Header,
+    //Html,
+    Strong,
+    Table,
+    TableHead,
+    Text,
+}
+
+struct CurrentType {
+    event_type: EventType,
+}
+
+/**
+ * Part of this function is Copyright Liam Beckman <liam@liambeckman.com> (license: MPL-2.0)
+ * Source: https://github.com/lbeckman314/md2tex/blob/25fa878ccce122c224c24659ee1c1dd30c8a5d51/src/lib.rs
+ *
+ */
 pub fn markdown_to_latex(markdown: String) -> String {
     let mut output = String::from(LATEX_HEADER);
 
     let parser = Parser::new(&markdown);
 
+    let mut header_value = String::new();
+
+    let mut current: CurrentType = CurrentType {
+        event_type: EventType::Text,
+    };
+    let mut cells = 0;
+
+    let mut equation_mode = false;
+    let mut buffer = String::new();
+
     for event in parser {
         match event {
             Event::Start(Tag::Header(level)) => {
+                current.event_type = EventType::Header;
+                output.push_str("\n");
                 output.push_str("\\");
-                for _ in 1..level {
-                    output.push_str("sub");
+                match level {
+                    -1 => output.push_str("part{"),
+                    0 => output.push_str("chapter{"),
+                    1 => output.push_str("section{"),
+                    2 => output.push_str("subsection{"),
+                    3 => output.push_str("subsubsection{"),
+                    4 => output.push_str("paragraph{"),
+                    5 => output.push_str("subparagraph{"),
+                    _ => eprintln!("header is out of range."),
                 }
-                output.push_str("section{");
             }
-            Event::End(Tag::Header(_)) => output.push_str("}\n"),
+            Event::End(Tag::Header(_)) => {
+                output.push_str("}\n");
+                output.push_str("\\");
+                output.push_str("label{");
+                output.push_str(&header_value);
+                output.push_str("}\n");
 
-            Event::Start(Tag::Emphasis) => output.push_str("\\emph{"),
+                output.push_str("\\");
+                output.push_str("label{");
+                output.push_str(&header_value.to_case(Case::Kebab));
+                output.push_str("}\n");
+            }
+            Event::Start(Tag::Emphasis) => {
+                current.event_type = EventType::Emphasis;
+                output.push_str("\\emph{");
+            }
             Event::End(Tag::Emphasis) => output.push_str("}"),
 
-            Event::Start(Tag::Strong) => output.push_str("\\textbf{"),
+            Event::Start(Tag::Strong) => {
+                current.event_type = EventType::Strong;
+                output.push_str("\\textbf{");
+            }
             Event::End(Tag::Strong) => output.push_str("}"),
 
             Event::Start(Tag::List(None)) => output.push_str("\\begin{itemize}\n"),
@@ -68,6 +126,17 @@ pub fn markdown_to_latex(markdown: String) -> String {
 
             Event::Start(Tag::List(Some(_))) => output.push_str("\\begin{enumerate}\n"),
             Event::End(Tag::List(Some(_))) => output.push_str("\\end{enumerate}\n"),
+
+            Event::Start(Tag::Paragraph) => {
+                output.push_str("\n");
+            }
+
+            Event::End(Tag::Paragraph) => {
+                // ~ adds a space to prevent
+                // "There's no line here to end" error on empty lines.
+                output.push_str(r"~\\");
+                output.push_str("\n");
+            }
 
             Event::Start(Tag::Link(_, url, _)) => {
                 output.push_str("\\href{");
@@ -77,6 +146,95 @@ pub fn markdown_to_latex(markdown: String) -> String {
 
             Event::End(Tag::Link(_, _, _)) => {
                 output.push_str("}");
+            }
+
+            Event::Start(Tag::Table(_)) => {
+                current.event_type = EventType::Table;
+                let table_start = vec![
+                    "\n",
+                    r"\begingroup",
+                    r"\setlength{\LTleft}{-20cm plus -1fill}",
+                    r"\setlength{\LTright}{\LTleft}",
+                    r"\begin{longtable}{!!!}",
+                    r"\hline",
+                    r"\hline",
+                    "\n",
+                ];
+                for element in table_start {
+                    output.push_str(element);
+                    output.push_str("\n");
+                }
+            }
+
+            Event::Start(Tag::TableHead) => {
+                current.event_type = EventType::TableHead;
+            }
+
+            Event::End(Tag::TableHead) => {
+                output.truncate(output.len() - 2);
+                output.push_str(r"\\");
+                output.push_str("\n");
+
+                output.push_str(r"\hline");
+                output.push_str("\n");
+
+                // we presume that a table follows every table head.
+                current.event_type = EventType::Table;
+            }
+
+            Event::End(Tag::Table(_)) => {
+                let table_end = vec![
+                    r"\arrayrulecolor{black}\hline",
+                    r"\end{longtable}",
+                    r"\endgroup",
+                    "\n",
+                ];
+
+                for element in table_end {
+                    output.push_str(element);
+                    output.push_str("\n");
+                }
+
+                let mut cols = String::new();
+                for _i in 0..cells {
+                    cols.push_str(&format!(
+                        r"C{{{width}\textwidth}} ",
+                        width = 1. / cells as f64
+                    ));
+                }
+                output = output.replace("!!!", &cols);
+                cells = 0;
+                current.event_type = EventType::Text;
+            }
+
+            Event::Start(Tag::TableCell) => match current.event_type {
+                EventType::TableHead => {
+                    output.push_str(r"\bfseries{");
+                }
+                _ => (),
+            },
+
+            Event::End(Tag::TableCell) => {
+                match current.event_type {
+                    EventType::TableHead => {
+                        output.push_str(r"}");
+                        cells += 1;
+                    }
+                    _ => (),
+                }
+
+                output.push_str(" & ");
+            }
+
+            Event::Start(Tag::TableRow) => {
+                current.event_type = EventType::Table;
+            }
+
+            Event::End(Tag::TableRow) => {
+                output.truncate(output.len() - 2);
+                output.push_str(r"\\");
+                output.push_str(r"\arrayrulecolor{lightgray}\hline");
+                output.push_str("\n");
             }
 
             Event::Start(Tag::Image(_, path, title)) => {
@@ -105,13 +263,86 @@ pub fn markdown_to_latex(markdown: String) -> String {
 
             Event::End(Tag::CodeBlock(_)) => {
                 output.push_str("\n\\end{lstlisting}\n");
+                current.event_type = EventType::Text;
+            }
+
+            Event::Code(t) => {
+                output.push_str("\\lstinline|");
+                match current.event_type {
+                    EventType::Header => output
+                        .push_str(&*t.replace("#", r"\#").replace("…", "...").replace("З", "3")),
+                    _ => output
+                        .push_str(&*t.replace("…", "...").replace("З", "3").replace("�", r"\�")),
+                }
+                output.push_str("|");
             }
 
             Event::Text(t) => {
-                output.push_str(&*t);
+                // if "\(" or "\[" are encountered, then begin equation
+                // and don't replace any characters.
+                let delim_start = vec![r"\(", r"\["];
+                let delim_end = vec![r"\)", r"\]"];
+
+                if buffer.len() > 100 {
+                    buffer.clear();
+                }
+
+                buffer.push_str(&t.clone().into_string());
+
+                match current.event_type {
+                    EventType::Strong
+                    | EventType::Emphasis
+                    | EventType::Text
+                    | EventType::Header
+                    | EventType::Table => {
+                        // TODO more elegant way to do ordered `replace`s (structs?).
+                        if delim_start
+                            .into_iter()
+                            .any(|element| buffer.contains(element))
+                        {
+                            let popped = output.pop().unwrap();
+                            if popped != '\\' {
+                                output.push(popped);
+                            }
+                            output.push_str(&*t);
+                            equation_mode = true;
+                        } else if delim_end
+                            .into_iter()
+                            .any(|element| buffer.contains(element))
+                            || equation_mode == true
+                        {
+                            let popped = output.pop().unwrap();
+                            if popped != '\\' {
+                                output.push(popped);
+                            }
+                            output.push_str(&*t);
+                            equation_mode = false;
+                        } else {
+                            output.push_str(
+                                &*t.replace(r"\", r"\\")
+                                    .replace("&", r"\&")
+                                    .replace(r"\s", r"\textbackslash{}s")
+                                    .replace(r"\w", r"\textbackslash{}w")
+                                    .replace("_", r"\_")
+                                    .replace(r"\<", "<")
+                                    .replace(r"%", r"\%")
+                                    .replace(r"$", r"\$")
+                                    .replace(r"—", "---")
+                                    .replace("#", r"\#"),
+                            );
+                        }
+                        header_value = t.into_string();
+                    }
+                    _ => output.push_str(&*t),
+                }
             }
 
             Event::SoftBreak => {
+                output.push('\n');
+            }
+
+            Event::HardBreak => {
+                output.push_str(r"\\");
                 output.push('\n');
             }
 
