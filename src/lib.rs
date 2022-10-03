@@ -417,16 +417,30 @@ issue [#12345](https://example.com)
    xleftmargin=0.2cm
 }
 \begin{document}
+
 \section{First title}
-Some content\subsection{Second level}
+\label{First title}
+\label{first-title}
+
+Some content~\\
+
+\subsection{Second level}
+\label{Second level}
+\label{second-level}
+
 Text
 \href{https://example.com}{link}
 \textbf{Bold}
-\textbf{Italic}some code:\begin{lstlisting}[language=sh]
+\textbf{Italic}~\\
+
+some code:~\\
+\begin{lstlisting}[language=sh]
 sudo make-it-work
 
 \end{lstlisting}
-issue \href{https://example.com}{#12345}
+
+issue \href{https://example.com}{\#12345}~\\
+
 \end{document}
 "#;
 
