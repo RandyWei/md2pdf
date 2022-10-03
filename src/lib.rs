@@ -142,6 +142,12 @@ Text
 [link](https://example.com)
 **Bold**
 __Italic__
+
+some code:
+```sh
+sudo make-it-work
+```
+issue [#12345](https://example.com)
 "#;
     const LATEXT_OUT: &str = r#"\documentclass{scrartcl}
 \usepackage{graphicx}
@@ -185,7 +191,11 @@ Some content\subsection{Second level}
 Text
 \href{https://example.com}{link}
 \textbf{Bold}
-\textbf{Italic}
+\textbf{Italic}some code:\begin{lstlisting}[language=sh]
+sudo make-it-work
+
+\end{lstlisting}
+issue \href{https://example.com}{#12345}
 \end{document}
 "#;
 
